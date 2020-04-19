@@ -1,0 +1,4 @@
+**/.secrets/*
+**/.mypy_cache
+**/*_nogit
+
