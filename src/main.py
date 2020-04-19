@@ -14,6 +14,7 @@
 
 # [START gae_python37_cloudsql_mysql]
 import os
+import yaml
 
 from flask import Flask
 import pymysql
@@ -41,12 +42,8 @@ def main():
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
         host = '127.0.0.1'
-        # print("**************************************")
-        # print(db_user, db_password, db_name, db_connection_name)
-        # print("**************************************")
         cnx = pymysql.connect(user=db_user, password=db_password,
                               host=host, db=db_name)
-        print(cnx)
 
     with cnx.cursor() as cursor:
         cursor.execute('SELECT NOW() as now;')
@@ -59,9 +56,9 @@ def main():
 
 
 if __name__ == '__main__':
-
-    os.environ["CLOUD_SQL_USERNAME"] =  "root"
-    os.environ["CLOUD_SQL_PASSWORD"] =  '#uchs1234'
-    os.environ["CLOUD_SQL_DATABASE_NAME"] =  "book"
-    os.environ["CLOUD_SQL_CONNECTION_NAME"] =  "tribal-marker-274610 = asia-south1 = uchs-db"
+    if not os.environ.get('GAE_ENV') == 'standard':
+        with open("app.yaml") as f:
+            env = yaml.load(f, Loader=yaml.BaseLoader)["env_variables"]
+        for k, v in env.items():
+            os.environ[k] = v
     app.run(host='127.0.0.1', port=8080, debug=True)
