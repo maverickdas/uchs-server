@@ -19,16 +19,20 @@ def main():
     if os.environ.get('GAE_ENV') == 'standard':
         # If deployed, use the local socket interface for accessing Cloud SQL
         unix_socket = '/cloudsql/{}'.format(db_connection_name)
-        cnx = pymysql.connect(user=db_user, password=db_password,
-                              unix_socket=unix_socket, db=db_name)
+        cnx = pymysql.connect(user=db_user,
+                              password=db_password,
+                              unix_socket=unix_socket,
+                              db=db_name)
     else:
         # If running locally, use the TCP connections instead
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
         host = '127.0.0.1'
-        cnx = pymysql.connect(user=db_user, password=db_password,
-                              host=host, db=db_name)
+        cnx = pymysql.connect(user=db_user,
+                              password=db_password,
+                              host=host,
+                              db=db_name)
 
     with cnx.cursor() as cursor:
         cursor.execute('SELECT NOW() as now;')
@@ -45,10 +49,20 @@ def test1():
     return jsonify(response)
 
 
-@app.route('/testname', methods=['GET'])
-def test():
-    name = request.args.get('name')
-    reponse = {"data": name, "status": "OK"}
+@app.route('/raiseAlarm', methods=['GET'])
+def raise_alarm():
+    user_id = request.args.get('userID')
+    alarm_id = request.args.get('alarmID')
+    alarm_ts = request.args.get('alarmTS')
+    alarm_loc = request.args.get('alarmLoc')
+    alarm_type = request.args.get('alarmType')
+    reponse = {
+        "data": {
+            "ACK":
+            f"Received {alarm_type} alarm from {user_id} at {alarm_ts} from {alarm_loc}."
+        },
+        "status": "OK"
+    }
     return jsonify(reponse)
 
 
