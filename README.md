@@ -19,7 +19,11 @@ App code is in `/src`
 
 # To deploy
 
-Run:
-```
-gcloud deploy app
-```
+1. Navigate to `/src`
+    ```
+    cd src/
+    ```
+2. Run:
+    ```
+    gcloud app deploy
+    ```
