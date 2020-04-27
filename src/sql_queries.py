@@ -1,0 +1,1 @@
+insert_alarm_in_db = "sql"

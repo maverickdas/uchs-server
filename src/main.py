@@ -1,8 +1,14 @@
 import os
-import yaml
+import sys
+import traceback
 
-from flask import Flask, request, jsonify
 import pymysql
+import yaml
+from flask import Flask, jsonify, request
+
+from alarm_manager import receive_alarm
+from getloc import get_loc
+from uchs_exceptions import DBError
 
 db_user = os.environ.get('CLOUD_SQL_USERNAME')
 db_password = os.environ.get('CLOUD_SQL_PASSWORD')
@@ -12,8 +18,7 @@ db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
 app = Flask(__name__)
 
 
-@app.route('/uchs-db')
-def main():
+def get_db_connection():
     # When deployed to App Engine, the `GAE_ENV` environment variable will be
     # set to `standard`
     if os.environ.get('GAE_ENV') == 'standard':
@@ -33,18 +38,11 @@ def main():
                               password=db_password,
                               host=host,
                               db=db_name)
-
-    with cnx.cursor() as cursor:
-        cursor.execute('SELECT NOW() as now;')
-        result = cursor.fetchall()
-        current_time = result[0][0]
-    cnx.close()
-
-    return str(current_time)
+    return cnx
 
 
 @app.route('/')
-def test1():
+def test():
     response = {"data": "Welcome to UCHS-Server!", "status": "OK"}
     return jsonify(response)
 
@@ -56,14 +54,45 @@ def raise_alarm():
     alarm_ts = request.args.get('alarmTS')
     alarm_loc = request.args.get('alarmLoc')
     alarm_type = request.args.get('alarmType')
-    reponse = {
-        "data": {
-            "ACK":
-            f"Received {alarm_type} alarm from {user_id} at {alarm_ts} from {alarm_loc}."
-        },
-        "status": "OK"
-    }
-    return jsonify(reponse)
+    geoloc = alarm_loc
+    # print("=====================")
+    # print(alarm_loc)
+    # if len(alarm_loc.split(",")) == 2:
+    #     loc = get_loc(alarm_loc)
+    #     if loc:
+    #         geoloc = loc
+    # print(geoloc)
+    err = ""
+    sys_err = ""
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            stat = receive_alarm(cursor, user_id, alarm_id, alarm_ts,
+                                 alarm_loc, alarm_type)
+        connx.close()
+    except Exception as e:
+        stat = False
+        try:
+            err = "".join(str(x) + " " for x in e.args)
+        except:
+            err = "Error"
+        sys_err = sys.exc_info()[0]
+
+    if stat:
+        response = {
+            "data": {
+                "ACK":
+                f"Received {alarm_type} alarm from {user_id} at {alarm_ts} from {geoloc}."
+            },
+            "status": 1
+        }
+    else:
+        response = {
+            "errorMsg": traceback.format_exc(),
+            "errorDetails": str(err) + " => " + str(sys_err),
+            "status": 0
+        }
+    return jsonify(response)
 
 
 if __name__ == '__main__':

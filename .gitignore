@@ -2,4 +2,5 @@
 **/.mypy_cache
 **/*_nogit
 **/.vscode
+**/__pycache__
 
