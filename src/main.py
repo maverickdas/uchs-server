@@ -6,7 +6,7 @@ import pymysql
 import yaml
 from flask import Flask, jsonify, request
 
-from alarm_manager import receive_alarm
+from alarm_manager import receive_alarm, start_alert_procedure
 from getloc import get_loc
 from uchs_exceptions import DBError
 
@@ -34,9 +34,11 @@ def get_db_connection():
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
         host = '127.0.0.1'
+        port = 3306
         cnx = pymysql.connect(user=db_user,
                               password=db_password,
                               host=host,
+                              port=port,
                               db=db_name)
     return cnx
 
@@ -50,6 +52,7 @@ def test():
 @app.route('/raiseAlarm', methods=['GET'])
 def raise_alarm():
     user_id = request.args.get('userID')
+    # TODO: use UUId to generate alarm ID
     alarm_id = request.args.get('alarmID')
     alarm_ts = request.args.get('alarmTS')
     alarm_loc = request.args.get('alarmLoc')
@@ -67,18 +70,21 @@ def raise_alarm():
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            stat = receive_alarm(cursor, user_id, alarm_id, alarm_ts,
-                                 alarm_loc, alarm_type)
+            stat1, alarm = receive_alarm(cursor, user_id, alarm_id, alarm_ts,
+                                         alarm_loc, alarm_type)
+            stat2 = start_alert_procedure(cursor, alarm)
+        connx.commit()
         connx.close()
     except Exception as e:
-        stat = False
+        stat1 = False
         try:
             err = "".join(str(x) + " " for x in e.args)
         except:
             err = "Error"
         sys_err = sys.exc_info()[0]
+        tb_err = traceback.format_exc()
 
-    if stat:
+    if stat1:
         response = {
             "data": {
                 "ACK":
@@ -89,7 +95,8 @@ def raise_alarm():
     else:
         response = {
             "errorMsg": traceback.format_exc(),
-            "errorDetails": str(err) + " => " + str(sys_err),
+            "errorDetails":
+            str(err) + " => " + str(sys_err) + " => " + str(tb_err),
             "status": 0
         }
     return jsonify(response)
