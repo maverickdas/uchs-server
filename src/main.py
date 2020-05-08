@@ -10,17 +10,32 @@ from alarm_manager import receive_alarm, start_alert_procedure
 from getloc import get_loc
 from uchs_exceptions import DBError
 
-db_user = os.environ.get('CLOUD_SQL_USERNAME')
-db_password = os.environ.get('CLOUD_SQL_PASSWORD')
-db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
-db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+global db_user, db_password, db_name, db_connection_name
+def load_env_conf(testing=False):
+    if not os.environ.get('GAE_ENV') == 'standard':
+        app_path = os.path.join(__file__, "..", "app.yaml")
+        with open(app_path) as f:
+            env = yaml.load(f, Loader=yaml.BaseLoader)["env_variables"]
+        for k, v in env.items():
+            os.environ[k] = v
+    global db_user, db_password, db_name, db_connection_name
+    db_user = os.environ.get('CLOUD_SQL_USERNAME')
+    db_password = os.environ.get('CLOUD_SQL_PASSWORD')
+    db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
+    db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
+    if testing:
+        return (
+            db_user, db_password, db_name, db_connection_name
+        )
 
+load_env_conf()
 app = Flask(__name__)
 
 
-def get_db_connection():
+def get_db_connection(testing=False, params=None):
     # When deployed to App Engine, the `GAE_ENV` environment variable will be
     # set to `standard`
+    global db_user, db_password, db_name, db_connection_name
     if os.environ.get('GAE_ENV') == 'standard':
         # If deployed, use the local socket interface for accessing Cloud SQL
         unix_socket = '/cloudsql/{}'.format(db_connection_name)
@@ -33,6 +48,13 @@ def get_db_connection():
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
         # so that your application can use 127.0.0.1:3306 to connect to your
         # Cloud SQL instance
+        if testing and params:
+            try:
+                db_user = params["db_user"]
+                db_password = params["db_password"]
+                db_name = params["db_name"]
+            except Exception as e:
+                pass
         host = '127.0.0.1'
         port = 3306
         cnx = pymysql.connect(user=db_user,
@@ -77,6 +99,7 @@ def raise_alarm():
         connx.close()
     except Exception as e:
         stat1 = False
+        stat2 = False
         try:
             err = "".join(str(x) + " " for x in e.args)
         except:
@@ -84,7 +107,7 @@ def raise_alarm():
         sys_err = sys.exc_info()[0]
         tb_err = traceback.format_exc()
 
-    if stat1:
+    if stat1 and stat2:
         response = {
             "data": {
                 "ACK":
@@ -94,18 +117,13 @@ def raise_alarm():
         }
     else:
         response = {
-            "errorMsg": traceback.format_exc(),
-            "errorDetails":
-            str(err) + " => " + str(sys_err) + " => " + str(tb_err),
+            "errorMsg": str(err) + " => " + str(sys_err),
+            "errorDetails": str(tb_err).splitlines(),
             "status": 0
         }
     return jsonify(response)
 
 
 if __name__ == '__main__':
-    if not os.environ.get('GAE_ENV') == 'standard':
-        with open("app.yaml") as f:
-            env = yaml.load(f, Loader=yaml.BaseLoader)["env_variables"]
-        for k, v in env.items():
-            os.environ[k] = v
+    load_env_conf()
     app.run(host='127.0.0.1', port=8080, debug=True)
