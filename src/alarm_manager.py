@@ -1,5 +1,6 @@
 import enum
 import math
+from uuid import uuid1
 
 import uchs_exceptions as exs
 
@@ -17,7 +18,7 @@ class AlarmStatusType(enum.Enum):
 
 
 class Alarm:
-    def __init__(self, user_id, alarm_id, alarm_ts, alarm_loc, alarm_type):
+    def __init__(self, user_id, alarm_ts, alarm_loc, alarm_type):
         try:
             self.type = AlarmType[alarm_type]
             self.latt, self.longt = [
@@ -26,7 +27,7 @@ class Alarm:
         except Exception as e:
             raise exs.ObjError
         self.user_id = user_id
-        self.id = alarm_id
+        self.id = str(uuid1())
         self.tstamp = alarm_ts
         self.type = AlarmType[alarm_type]
         self.status = AlarmStatusType.Initiated
@@ -54,8 +55,8 @@ class Alarm:
         return True
 
 
-def receive_alarm(cursor, user_id, alarm_id, alarm_ts, alarm_loc, alarm_type):
-    alarm = Alarm(user_id, alarm_id, alarm_ts, alarm_loc, alarm_type)
+def receive_alarm(cursor, user_id, alarm_ts, alarm_loc, alarm_type):
+    alarm = Alarm(user_id, alarm_ts, alarm_loc, alarm_type)
     stat = alarm.insert_alarm(cursor)
     if stat:
         return True, alarm

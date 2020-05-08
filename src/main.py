@@ -4,6 +4,7 @@ import traceback
 
 import pymysql
 import yaml
+import json
 from flask import Flask, jsonify, request
 
 from alarm_manager import receive_alarm, start_alert_procedure
@@ -11,6 +12,8 @@ from getloc import get_loc
 from uchs_exceptions import DBError
 
 global db_user, db_password, db_name, db_connection_name
+
+
 def load_env_conf(testing=False):
     if not os.environ.get('GAE_ENV') == 'standard':
         app_path = os.path.join(__file__, "..", "app.yaml")
@@ -24,9 +27,9 @@ def load_env_conf(testing=False):
     db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
     db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
     if testing:
-        return (
-            db_user, db_password, db_name, db_connection_name
-        )
+        return (db_user, db_password, db_name, db_connection_name)
+    return None
+
 
 load_env_conf()
 app = Flask(__name__)
@@ -75,10 +78,11 @@ def test():
 def raise_alarm():
     user_id = request.args.get('userID')
     # TODO: use UUId to generate alarm ID
-    alarm_id = request.args.get('alarmID')
+    # alarm_id = request.args.get('alarmID')
     alarm_ts = request.args.get('alarmTS')
     alarm_loc = request.args.get('alarmLoc')
     alarm_type = request.args.get('alarmType')
+    testing = request.args.get('testing')
     geoloc = alarm_loc
     # print("=====================")
     # print(alarm_loc)
@@ -92,8 +96,8 @@ def raise_alarm():
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            stat1, alarm = receive_alarm(cursor, user_id, alarm_id, alarm_ts,
-                                         alarm_loc, alarm_type)
+            stat1, alarm = receive_alarm(cursor, user_id, alarm_ts, alarm_loc,
+                                         alarm_type)
             stat2 = start_alert_procedure(cursor, alarm)
         connx.commit()
         connx.close()
@@ -115,6 +119,11 @@ def raise_alarm():
             },
             "status": 1
         }
+        if testing:
+            response["debug"] = {
+                "id": alarm.id, "user": alarm.user_id
+            }
+
     else:
         response = {
             "errorMsg": str(err) + " => " + str(sys_err),

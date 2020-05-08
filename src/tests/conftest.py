@@ -1,5 +1,6 @@
+import os
 import sys
-sys.path.append("C:/Users/amit/Dev/uchs-server/src")
+sys.path.append(os.path.join(__file__, "..", ".."))
 
 import pytest
 
@@ -9,21 +10,20 @@ from main import app
 
 
 @pytest.fixture(scope="module")
-def new_client():
+def client():
     app.config["TESTING"] = True
     with app.test_client() as client:
         yield client
 
 
 @pytest.fixture(scope="module")
-def new_alarm():
-    alarm = Alarm("r21", "111", "100000", "23.1,22.6", "Fire")
-    # assert alarm1.latt == math.radians(23.1) and alarm1.longt == math.radians(22.6)
+def alarm():
+    alarm = Alarm("r21", "100000", "23.1,22.6", "Fire")
     yield alarm
 
 
 @pytest.fixture(scope="module")
-def new_conn():
+def conn():
     user, passw, name, conn_name = main.load_env_conf(testing=True)
     params = {
         "db_user": user,
