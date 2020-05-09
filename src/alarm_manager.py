@@ -1,58 +1,7 @@
-import enum
-import math
-from uuid import uuid1
-
 import uchs_exceptions as exs
-
-
-class AlarmType(enum.Enum):
-    Fire = 1
-    LostFound = 2
-    Medical = 3
-
-
-class AlarmStatusType(enum.Enum):
-    Initiated = 1
-    Notified = 2
-    Resolved = 3
-
-
-class Alarm:
-    def __init__(self, user_id, alarm_ts, alarm_loc, alarm_type):
-        try:
-            self.type = AlarmType[alarm_type]
-            self.latt, self.longt = [
-                math.radians(float(x.strip())) for x in alarm_loc.split(",")
-            ]
-        except Exception as e:
-            raise exs.ObjError
-        self.user_id = user_id
-        self.id = str(uuid1())
-        self.tstamp = alarm_ts
-        self.type = AlarmType[alarm_type]
-        self.status = AlarmStatusType.Initiated
-
-    def get_status(self):
-        return self.type.name
-
-    def set_status(self, alarm_status):
-        try:
-            self.status = AlarmStatusType[alarm_status]
-        except Exception as e:
-            raise exs.ObjError
-
-    def insert_alarm(self, cursor):
-        try:
-            query = """
-            INSERT INTO uchs_db.alarm_status
-            (alarm_id, alarm_status, user_id, latitude, longitude, alarm_type)
-            VALUES('{}', {}, '{}', {}, {}, '{}');
-            """.format(self.id, self.status.value, self.user_id, self.latt,
-                       self.longt, self.type.name)
-            cursor.execute(query)
-        except Exception as e:
-            raise exs.DBError
-        return True
+from alarm import Alarm
+from alert import Alert
+from message_gen import get_message
 
 
 def receive_alarm(cursor, user_id, alarm_ts, alarm_loc, alarm_type):
@@ -65,7 +14,9 @@ def receive_alarm(cursor, user_id, alarm_ts, alarm_loc, alarm_type):
 
 def start_alert_procedure(cursor, alarm: Alarm):
     try:
+        ## FETCH HELPERS
         user_id = alarm.user_id
+        guardian_list = helpline_list = community_list = specialist_list = []
 
         guardian_query = """
         SELECT *
@@ -101,12 +52,13 @@ def start_alert_procedure(cursor, alarm: Alarm):
         """.format(alarm.type.name, alarm.latt, alarm.latt, alarm.longt)
         cursor.execute(helpline_query)
         helpline_list = [x[0] for x in cursor.fetchall()]
-        print("helplines are -")
+        print("Helplines are -")
         print(helpline_list)
 
         if not helpline_list:
+            print("Since no helplines were found, getting specialists within 2km radius..")
             specials_query = """
-            select ut.user_id, ut.user_specialization
+            select ut.user_id
             from user_live_location ull join user_tbl ut 
             where ut.user_id = ull.user_id
             AND 
@@ -115,11 +67,25 @@ def start_alert_procedure(cursor, alarm: Alarm):
             ut.user_specialization ='{}'
             AND 
             acos(sin({}) * sin(ull.latitude) + cos({}) * cos(ull.latitude) * cos(ull.longitude - {})) * 6371 <= 2;
-            """.format(user_id, alarm.type.name, alarm.latt, alarm.latt, alarm.longt)
+            """.format(user_id, alarm.type.name, alarm.latt, alarm.latt,
+                       alarm.longt)
             cursor.execute(specials_query)
-            specialist_list = [(x[0], x[1]) for x in cursor.fetchall()]
+            specialist_list = [x[0] for x in cursor.fetchall()]
             print("Specialists are -")
             print(specialist_list)
+
+        ## SEND ALERT
+        message = get_message(alarm)
+        alert = Alert(alarm.id,
+                      guardian_list + community_list + specialist_list,
+                      helpline_list, message)
+        send_alerts_to_clients(alert) 
     except Exception as e:
         raise exs.DBError
     return True
+
+
+def send_alerts_to_clients(alert: Alert):
+    print(alert.user_list)
+    print(alert.helpl_list)
+    pass
