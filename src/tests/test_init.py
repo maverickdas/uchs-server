@@ -26,20 +26,6 @@ def test_db_init(conn):
     assert True
 
 
-def test_raise_alarm(client):
-    userID = "Thakuma"
-    alarmTS = "1000000"
-    alarmLoc = "22.3, 88.9"
-    alarmType = "Fire"
-    url = "/raiseAlarm?userID={}&alarmTS={}&alarmLoc={}&alarmType={}&testing=True".format(
-        userID, alarmTS, alarmLoc, alarmType
-    )
-    resp = client.get(url)
-    print(resp.data)
-    check_words = f"Received {alarmType} alarm from {userID}"
-    assert check_words.encode("UTF-8") in resp.data
-
-
 # if __name__ == "__main__":
 #     cl = get_client()
 #     test_simple(cl)
