@@ -4,11 +4,11 @@ import traceback
 
 import pymysql
 import yaml
-import json
 from flask import Flask, jsonify, request
 
 from alarm_manager import receive_alarm, start_alert_procedure
 from getloc import get_loc
+from message_gen import get_alert_response
 from uchs_exceptions import DBError
 
 global db_user, db_password, db_name, db_connection_name
@@ -77,26 +77,15 @@ def test():
 @app.route('/raiseAlarm', methods=['GET'])
 def raise_alarm():
     user_id = request.args.get('userID')
-    # TODO: use UUId to generate alarm ID
-    # alarm_id = request.args.get('alarmID')
-    alarm_ts = request.args.get('alarmTS')
     alarm_loc = request.args.get('alarmLoc')
     alarm_type = request.args.get('alarmType')
     testing = request.args.get('testing')
-    geoloc = alarm_loc
-    # print("=====================")
-    # print(alarm_loc)
-    # if len(alarm_loc.split(",")) == 2:
-    #     loc = get_loc(alarm_loc)
-    #     if loc:
-    #         geoloc = loc
-    # print(geoloc)
     err = ""
     sys_err = ""
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            stat1, alarm = receive_alarm(cursor, user_id, alarm_ts, alarm_loc,
+            stat1, alarm = receive_alarm(cursor, user_id, alarm_loc,
                                          alarm_type)
             stat2 = start_alert_procedure(cursor, alarm)
         connx.commit()
@@ -115,14 +104,12 @@ def raise_alarm():
         response = {
             "data": {
                 "ACK":
-                f"Received {alarm_type} alarm from {user_id} at {alarm_ts} from {geoloc}."
+                f"Received {alarm_type} alarm from {user_id} from {alarm_loc}."
             },
             "status": 1
         }
         if testing:
-            response["debug"] = {
-                "id": alarm.id, "user": alarm.user_id
-            }
+            response["debug"] = {"id": alarm.id, "user": alarm.user_id}
 
     else:
         response = {
@@ -130,6 +117,65 @@ def raise_alarm():
             "errorDetails": str(tb_err).splitlines(),
             "status": 0
         }
+    return jsonify(response)
+
+
+@app.route('/checkUserAlerts', methods=['GET'])
+def check_user_alert():
+    user_id = request.args.get("uid")
+    connx = get_db_connection()
+    response = {"data": [], "status": 0}
+    with connx.cursor() as cursor:
+        try:
+            query = """
+            SELECT alarm_id FROM uchs_db.user_alert_status
+            WHERE user_id = '{}' AND status = 0; 
+            """.format(user_id)
+            cursor.execute(query)
+            results = cursor.fetchall()
+            if len(results) > 0:
+                response["alarmDetails"] = []
+                alarm_id_list = [x[0] for x in results]
+                for id in alarm_id_list:
+                    resp_details = get_alert_response(cursor=cursor,
+                                                      alarm_id=id)
+                    print(resp_details)
+                    response["data"].append("")
+                    response["alarmDetails"].append(resp_details)
+                    response["status"] = 1
+        except:
+            # proper exception
+            pass
+    connx.close()
+    return jsonify(response)
+
+
+@app.route('/checkHelplineAlerts', methods=['GET'])
+def check_helpline_alert():
+    helpl_id = request.args.get("hid")
+    connx = get_db_connection()
+    response = {"data": [], "status": 0}
+    with connx.cursor() as cursor:
+        try:
+            query = """
+            SELECT alarm_id FROM uchs_db.helpline_alert_status
+            WHERE helpline_id = '{}' AND status = 0;
+            """.format(helpl_id)
+            cursor.execute(query)
+            results = cursor.fetchall()
+            if len(results) > 0:
+                response["alarmDetails"] = []
+                alarm_id_list = [x[0] for x in results]
+                for id in alarm_id_list:
+                    resp_details = get_alert_response(cursor=cursor,
+                                                      alarm_id=id)
+                    response["data"].append("")
+                    response["alarmDetails"].append(resp_details)
+                    response["status"] = 1
+        except:
+            # proper exception
+            pass
+    connx.close()
     return jsonify(response)
 
 

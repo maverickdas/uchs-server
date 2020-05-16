@@ -1,11 +1,10 @@
 import uchs_exceptions as exs
 from alarm import Alarm
 from alert import Alert
-from message_gen import get_message
 
 
-def receive_alarm(cursor, user_id, alarm_ts, alarm_loc, alarm_type):
-    alarm = Alarm(user_id, alarm_ts, alarm_loc, alarm_type)
+def receive_alarm(cursor, user_id, alarm_loc, alarm_type):
+    alarm = Alarm(user_id, alarm_loc, alarm_type)
     stat = alarm.insert_alarm(cursor)
     if stat:
         return True, alarm
@@ -24,7 +23,10 @@ def start_alert_procedure(cursor, alarm: Alarm):
         WHERE user_id = '{}';
         """.format(user_id)
         cursor.execute(guardian_query)
-        guardian_list = [x for x in cursor.fetchone()[1:] if x is not None]
+        try:
+            guardian_list = [x for x in cursor.fetchone()[1:] if x is not None]
+        except Exception:
+            pass
         print("Guardians are -")
         print(guardian_list)
 
@@ -38,7 +40,10 @@ def start_alert_procedure(cursor, alarm: Alarm):
         acos(sin({}) * sin(ull.latitude) + cos({}) * cos(ull.latitude) * cos(ull.longitude - {})) * 6371 <= 1;
         """.format(user_id, alarm.latt, alarm.latt, alarm.longt)
         cursor.execute(community_1_query)
-        community_list = [x[0] for x in cursor.fetchall()]
+        try:
+            community_list = [x[0] for x in cursor.fetchall()]
+        except Exception:
+            pass
         print("Community is -")
         print(community_list)
 
@@ -51,7 +56,10 @@ def start_alert_procedure(cursor, alarm: Alarm):
         acos(sin({}) * sin(lt.latitude) + cos({}) * cos(lt.latitude ) * cos(lt.longitude - {})) * 6371 <= 1;
         """.format(alarm.type.name, alarm.latt, alarm.latt, alarm.longt)
         cursor.execute(helpline_query)
-        helpline_list = [x[0] for x in cursor.fetchall()]
+        try:
+            helpline_list = [x[0] for x in cursor.fetchall()]
+        except Exception:
+            pass
         print("Helplines are -")
         print(helpline_list)
 
@@ -70,22 +78,25 @@ def start_alert_procedure(cursor, alarm: Alarm):
             """.format(user_id, alarm.type.name, alarm.latt, alarm.latt,
                        alarm.longt)
             cursor.execute(specials_query)
-            specialist_list = [x[0] for x in cursor.fetchall()]
+            try:
+                specialist_list = [x[0] for x in cursor.fetchall()]
+            except Exception:
+                pass
             print("Specialists are -")
             print(specialist_list)
 
         ## SEND ALERT
-        message = get_message(alarm)
+        # message = get_message(alarm)
+        message = ""
         alert = Alert(alarm.id,
                       guardian_list + community_list + specialist_list,
                       helpline_list, message)
-        send_alerts_to_clients(alert) 
+        send_alerts_to_clients(cursor, alert) 
     except Exception as e:
         raise exs.DBError
     return True
 
 
-def send_alerts_to_clients(alert: Alert):
-    print(alert.user_list)
-    print(alert.helpl_list)
-    pass
+def send_alerts_to_clients(cursor, alert: Alert):
+    alert.insert_alert(cursor)
+    return True

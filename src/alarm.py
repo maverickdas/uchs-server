@@ -18,7 +18,7 @@ class AlarmStatusType(enum.Enum):
 
 
 class Alarm:
-    def __init__(self, user_id, alarm_ts, alarm_loc, alarm_type):
+    def __init__(self, user_id, alarm_loc, alarm_type):
         try:
             self.type = AlarmType[alarm_type]
             self.latt, self.longt = [
@@ -28,7 +28,6 @@ class Alarm:
             raise exs.ObjError
         self.user_id = user_id
         self.id = str(uuid1())
-        self.tstamp = alarm_ts
         self.type = AlarmType[alarm_type]
         self.status = AlarmStatusType.Initiated
 
