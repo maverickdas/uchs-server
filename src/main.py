@@ -6,7 +6,7 @@ import pymysql
 import yaml
 from flask import Flask, jsonify, request
 
-from alarm_manager import receive_alarm, start_alert_procedure
+from alarm_manager import receive_alarm, start_alert_procedure, update_after_notified, check_update_alarm_after_notified
 from getloc import get_loc
 from message_gen import get_alert_response
 from uchs_exceptions import DBError
@@ -125,28 +125,36 @@ def check_user_alert():
     user_id = request.args.get("uid")
     connx = get_db_connection()
     response = {"data": [], "status": 0}
-    with connx.cursor() as cursor:
-        try:
-            query = """
-            SELECT alarm_id FROM uchs_db.user_alert_status
-            WHERE user_id = '{}' AND status = 0; 
-            """.format(user_id)
-            cursor.execute(query)
-            results = cursor.fetchall()
-            if len(results) > 0:
-                response["alarmDetails"] = []
-                alarm_id_list = [x[0] for x in results]
-                for id in alarm_id_list:
-                    resp_details = get_alert_response(cursor=cursor,
-                                                      alarm_id=id)
-                    print(resp_details)
-                    response["data"].append("")
-                    response["alarmDetails"].append(resp_details)
-                    response["status"] = 1
-        except:
-            # proper exception
-            pass
-    connx.close()
+    try:
+        alarm_id_list = []
+        cursor = connx.cursor()
+        query = """
+        SELECT alarm_id FROM uchs_db.user_alert_status
+        WHERE user_id = '{}' AND status = 0; 
+        """.format(user_id)
+        cursor.execute(query)
+        results = cursor.fetchall()
+        if len(results) > 0:
+            response["alarmDetails"] = []
+            alarm_id_list = [x[0] for x in results]
+            for id in alarm_id_list:
+                resp_details = get_alert_response(cursor=cursor,
+                                                    alarm_id=id)
+                response["data"].append("Generic Message")
+                response["alarmDetails"].append(resp_details)
+                response["status"] = 1
+            up_stat = update_after_notified(cursor,
+                                            user_id,
+                                            alarm_id_list,
+                                            kind="user")
+        connx.commit()
+        for aid in alarm_id_list:
+            check_update_alarm_after_notified(cursor, aid)
+        connx.commit()
+        connx.close()
+    except:
+        # proper exception
+        pass
     return jsonify(response)
 
 
@@ -155,27 +163,36 @@ def check_helpline_alert():
     helpl_id = request.args.get("hid")
     connx = get_db_connection()
     response = {"data": [], "status": 0}
-    with connx.cursor() as cursor:
-        try:
-            query = """
-            SELECT alarm_id FROM uchs_db.helpline_alert_status
-            WHERE helpline_id = '{}' AND status = 0;
-            """.format(helpl_id)
-            cursor.execute(query)
-            results = cursor.fetchall()
-            if len(results) > 0:
-                response["alarmDetails"] = []
-                alarm_id_list = [x[0] for x in results]
-                for id in alarm_id_list:
-                    resp_details = get_alert_response(cursor=cursor,
-                                                      alarm_id=id)
-                    response["data"].append("")
-                    response["alarmDetails"].append(resp_details)
-                    response["status"] = 1
-        except:
-            # proper exception
-            pass
-    connx.close()
+    try:
+        alarm_id_list = []
+        cursor = connx.cursor()
+        query = """
+        SELECT alarm_id FROM uchs_db.helpline_alert_status
+        WHERE helpline_id = '{}' AND status = 0; 
+        """.format(helpl_id)
+        cursor.execute(query)
+        results = cursor.fetchall()
+        if len(results) > 0:
+            response["alarmDetails"] = []
+            alarm_id_list = [x[0] for x in results]
+            for id in alarm_id_list:
+                resp_details = get_alert_response(cursor=cursor,
+                                                    alarm_id=id)
+                response["data"].append("Generic Message")
+                response["alarmDetails"].append(resp_details)
+                response["status"] = 1
+            up_stat = update_after_notified(cursor,
+                                            helpl_id,
+                                            alarm_id_list,
+                                            kind="helpl")
+        connx.commit()
+        for aid in alarm_id_list:
+            check_update_alarm_after_notified(cursor, aid)
+        connx.commit()
+        connx.close()
+    except:
+        # proper exception
+        pass
     return jsonify(response)
 
 

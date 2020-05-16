@@ -3,7 +3,7 @@ from alarm import Alarm, AlarmType
 
 
 def get_alert_response(cursor=None, alarm: Alarm = None, alarm_id=None):
-    print("Generating response..")
+    # print("Generating response..")
     if alarm_id and cursor:
         query = """
         SELECT user_id, alarm_type, latitude, longitude, timestamp
