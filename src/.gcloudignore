@@ -19,4 +19,4 @@ __pycache__/
 /setup.cfg
 # unwanted main files
 main_*.py
-tests/
+tests/*

@@ -13,7 +13,6 @@ def get_alert_response(cursor=None, alarm: Alarm = None, alarm_id=None):
         """.format(alarm_id)
         cursor.execute(query)
         results = cursor.fetchone()
-        print(results)
         uid, a_type, lat, lon, ts = results
         a_type = a_type.capitalize()
         # msg = f"{a_type} alarm raised by {uid}."
@@ -21,7 +20,7 @@ def get_alert_response(cursor=None, alarm: Alarm = None, alarm_id=None):
             "user": uid,
             "lat": float(lat),
             "lon": float(lon),
-            "tstamp": ts,
+            "tstamp": int(ts.timestamp()),
             "atype": a_type
         }
     else:
