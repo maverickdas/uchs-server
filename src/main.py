@@ -12,7 +12,8 @@ from getloc import get_loc
 from message_gen import get_alert_response
 from uchs_exceptions import DBError
 
-global db_user, db_password, db_name, db_connection_name
+global db_user, db_password, db_name, db_connection_name, testdb_name
+db_user = db_password = db_name = db_connection_name = testdb_name = None
 
 
 def formatted_err_response(exc: Exception):
@@ -36,13 +37,20 @@ def load_env_conf(testing=False):
             env = yaml.load(f, Loader=yaml.BaseLoader)["env_variables"]
         for k, v in env.items():
             os.environ[k] = v
-    global db_user, db_password, db_name, db_connection_name
+    global db_user, db_password, db_name, db_connection_name, testdb_name
     db_user = os.environ.get('CLOUD_SQL_USERNAME')
     db_password = os.environ.get('CLOUD_SQL_PASSWORD')
     db_name = os.environ.get('CLOUD_SQL_DATABASE_NAME')
+    testdb_name = os.environ.get('TEST_DB_NAME')
     db_connection_name = os.environ.get('CLOUD_SQL_CONNECTION_NAME')
     if testing:
-        return (db_user, db_password, db_name, db_connection_name)
+        return {
+            "db_user": db_user,
+            "db_passw": db_password,
+            "db_name": db_name,
+            "testdb_name": testdb_name,
+            "db_connection_name": db_connection_name
+        }
     return None
 
 
@@ -50,17 +58,18 @@ load_env_conf()
 app = Flask(__name__)
 
 
-def get_db_connection(testing=False, params=None):
+def get_db_connection(testing=False, params=None, is_alt=False):
     # When deployed to App Engine, the `GAE_ENV` environment variable will be
     # set to `standard`
-    global db_user, db_password, db_name, db_connection_name
+    global db_user, db_password, db_name, db_connection_name, testdb_name
     if os.environ.get('GAE_ENV') == 'standard':
         # If deployed, use the local socket interface for accessing Cloud SQL
         unix_socket = '/cloudsql/{}'.format(db_connection_name)
+        conn_db_name = testdb_name if is_alt else db_name
         cnx = pymysql.connect(user=db_user,
                               password=db_password,
                               unix_socket=unix_socket,
-                              db=db_name)
+                              db=conn_db_name)
     else:
         # If running locally, use the TCP connections instead
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
@@ -71,15 +80,17 @@ def get_db_connection(testing=False, params=None):
                 db_user = params["db_user"]
                 db_password = params["db_password"]
                 db_name = params["db_name"]
+                testdb_name = params["testdb_name"]
             except Exception as e:
                 pass
         host = '127.0.0.1'
         port = 3306
+        conn_db_name = testdb_name if is_alt else db_name
         cnx = pymysql.connect(user=db_user,
                               password=db_password,
                               host=host,
                               port=port,
-                              db=db_name)
+                              db=conn_db_name)
     return cnx
 
 
@@ -95,12 +106,15 @@ def raise_alarm():
     alarm_loc = request.args.get('alarmLoc')
     alarm_type = request.args.get('alarmType')
     testing = request.args.get('testing')
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     try:
-        connx = get_db_connection()
+        connx = get_db_connection(is_alt=is_alt)
         with connx.cursor() as cursor:
-            stat1, alarm = alm.receive_alarm(cursor, user_id, alarm_loc,
-                                             alarm_type)
-            stat2 = alm.start_alert_procedure(cursor, alarm)
+            stat1, alarm = alm.receive_alarm(cursor, user_id,
+                                             alarm_loc, alarm_type,
+                                             is_alt=is_alt)
+            stat2 = alm.start_alert_procedure(cursor, alarm, is_alt=is_alt)
         connx.commit()
         connx.close()
     except Exception as e:
@@ -126,7 +140,9 @@ def raise_alarm():
 @app.route('/checkUserAlerts', methods=['GET'])
 def check_user_alert():
     user_id = request.args.get("uid")
-    connx = get_db_connection()
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    connx = get_db_connection(is_alt=is_alt)
     response = {"data": [], "status": 0}
     try:
         alarm_id_list = []
@@ -141,17 +157,17 @@ def check_user_alert():
             response["alarmDetails"] = []
             alarm_id_list = [x[0] for x in results]
             for id in alarm_id_list:
-                resp_details = get_alert_response(cursor=cursor, alarm_id=id)
+                resp_details = get_alert_response(cursor=cursor,
+                                                  alarm_id=id,
+                                                  is_alt=is_alt)
                 response["data"].append("Generic Message")
                 response["alarmDetails"].append(resp_details)
                 response["status"] = 1
-            alm.update_after_notified(cursor,
-                                      user_id,
-                                      alarm_id_list,
-                                      is_user=True)
+            alm.update_after_notified(cursor, user_id, alarm_id_list,
+                                      is_user=True, is_alt=is_alt)
         connx.commit()
         for aid in alarm_id_list:
-            alm.check_update_alarm_after_notified(cursor, aid)
+            alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
@@ -168,7 +184,9 @@ def check_user_alert():
 @app.route('/checkHelplineAlerts', methods=['GET'])
 def check_helpline_alert():
     helpl_id = request.args.get("hid")
-    connx = get_db_connection()
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    connx = get_db_connection(is_alt=is_alt)
     response = {"data": [], "status": 0}
     try:
         alarm_id_list = []
@@ -183,17 +201,17 @@ def check_helpline_alert():
             response["alarmDetails"] = []
             alarm_id_list = [x[0] for x in results]
             for id in alarm_id_list:
-                resp_details = get_alert_response(cursor=cursor, alarm_id=id)
+                resp_details = get_alert_response(cursor=cursor,
+                                                  alarm_id=id,
+                                                  is_alt=is_alt)
                 response["data"].append("Generic Message")
                 response["alarmDetails"].append(resp_details)
                 response["status"] = 1
-            alm.update_after_notified(cursor,
-                                      helpl_id,
-                                      alarm_id_list,
-                                      is_user=False)
+            alm.update_after_notified(cursor, helpl_id, alarm_id_list,
+                                      is_user=False, is_alt=is_alt)
         connx.commit()
         for aid in alarm_id_list:
-            alm.check_update_alarm_after_notified(cursor, aid)
+            alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
@@ -211,10 +229,13 @@ def check_helpline_alert():
 def check_uid_exists():
     utype = request.args.get("type").lower()
     client_id = request.args.get("id")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.check_uid_exists(cursor, client_id, utype=utype)
+            val = usm.check_uid_exists(cursor, client_id,
+                                       utype=utype, is_alt=is_alt)
         stat = True
         connx.close()
     except Exception as e:
@@ -238,11 +259,13 @@ def register_user():
     ccode = request.args.get("ccode")
     phone = request.args.get("phone")
     specz = request.args.get("specz")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            usm.register_user(cursor, uid, passwd, fname, lname, age, ccode,
-                              phone, specz)
+            usm.register_user(cursor, uid, passwd, fname, lname,
+                              age, ccode, phone, specz, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
@@ -266,11 +289,13 @@ def register_helpline():
     phone = request.args.get("phone")
     specz = request.args.get("specz")
     location = request.args.get("loc")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            usm.register_helpline(cursor, hid, passwd, hname, ccode, phone,
-                                  specz, location)
+            usm.register_helpline(cursor, hid, passwd, hname, ccode,
+                                  phone, specz, location, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
@@ -290,10 +315,13 @@ def login():
     utype = request.args.get("type").lower()
     uid = request.args.get("id")
     passwd = request.args.get("pass")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.login_client(cursor, uid, passwd, utype=utype)
+            val = usm.login_client(cursor, uid, passwd,
+                                   utype=utype, is_alt=is_alt)
         stat = True
         connx.close()
     except Exception as e:
@@ -312,14 +340,18 @@ def configure_sop():
     uid = request.args.get("uid")
     guid_list = request.args.get("guid_list").split(",")
     update = request.args.get("update")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
     stat = False
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
             if update:
-                stat = usm.update_guardians(cursor, uid, guid_list)
+                stat = usm.update_guardians(cursor, uid,
+                                            guid_list, is_alt=is_alt)
             else:
-                stat = usm.insert_guardians(cursor, uid, guid_list)
+                stat = usm.insert_guardians(cursor, uid,
+                                            guid_list, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()

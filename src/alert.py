@@ -12,7 +12,8 @@ class Alert:
         if isinstance(msg, str):
             self.msg = msg
 
-    def insert_alert(self, cursor):
+    def insert_alert(self, cursor, is_alt=False):
+        db_name = "uchs_test" if is_alt else "uchs_db"
         user_alert_rows = helpl_alert_rows = None
         if len(self.user_list) > 0:
             user_alert_rows = [
@@ -20,10 +21,10 @@ class Alert:
             ]
             try:
                 ins_query_user = """
-                INSERT INTO uchs_db.user_alert_status
+                INSERT INTO {}.user_alert_status
                 (alarm_id, user_id)
                 VALUES {};
-                """.format(",".join(user_alert_rows))
+                """.format(db_name, ",".join(user_alert_rows))
                 cursor.execute(ins_query_user)
             except Exception:
                 raise exs.DBError
@@ -33,10 +34,10 @@ class Alert:
             ]
             try:
                 ins_query_helpl = """
-                INSERT INTO uchs_db.helpline_alert_status
+                INSERT INTO {}.helpline_alert_status
                 (alarm_id, helpline_id)
                 VALUES {};
-                """.format(",".join(helpl_alert_rows))
+                """.format(db_name, ",".join(helpl_alert_rows))
                 cursor.execute(ins_query_helpl)
             except Exception:
                 raise exs.DBError

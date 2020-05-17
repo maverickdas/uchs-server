@@ -40,14 +40,15 @@ class Alarm:
         except Exception as e:
             raise exs.ObjError
 
-    def insert_alarm(self, cursor):
+    def insert_alarm(self, cursor, is_alt=False):
         try:
+            db_name = "uchs_test" if is_alt else "uchs_db"
             query = """
-            INSERT INTO uchs_db.alarm_status
+            INSERT INTO {}.alarm_status
             (alarm_id, alarm_status, user_id, latitude, longitude, alarm_type)
             VALUES('{}', {}, '{}', {}, {}, '{}');
-            """.format(self.id, self.status.value, self.user_id, self.latt,
-                       self.longt, self.type.name)
+            """.format(db_name, self.id, self.status.value, self.user_id,
+                       self.latt, self.longt, self.type.name)
             cursor.execute(query)
         except Exception as e:
             raise exs.DBError

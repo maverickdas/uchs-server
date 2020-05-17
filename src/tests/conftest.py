@@ -18,18 +18,12 @@ def client():
 
 @pytest.fixture(scope="module")
 def alarm():
-    alarm = Alarm("r21", "100000", "23.1,22.6", "Fire")
+    alarm = Alarm("r21", "23.1,22.6", "Fire")
     yield alarm
 
 
 @pytest.fixture(scope="module")
 def conn():
-    user, passw, name, conn_name = main.load_env_conf(testing=True)
-    params = {
-        "db_user": user,
-        "db_password": passw,
-        "db_name": name,
-        "db_connection_name": conn_name
-    }
+    params = main.load_env_conf(testing=True)
     connx = main.get_db_connection(testing=True, params=params)
     return connx
