@@ -104,20 +104,20 @@ def send_alerts_to_clients(cursor, alert: Alert):
     return True
 
 
-def update_after_notified(cursor, client_id, alarm_id_list, kind="user"):
+def update_after_notified(cursor, client_id, alarm_id_list, is_user=True):
     ## client_id is same as user/helpline id
     query_upd = ""
     alert_row_vals = "(" + ",".join([f"'{aid}'"
                                      for aid in alarm_id_list]) + ")"
     try:
-        if kind == "user":
+        if is_user:
             query_upd = """
             UPDATE uchs_db.user_alert_status
             SET status=1
             WHERE alarm_id in {} AND user_id='{}';
             """.format(alert_row_vals, client_id)
             cursor.execute(query_upd)
-        elif kind == "helpl":
+        else:
             query_upd = """
             UPDATE uchs_db.helpline_alert_status
             SET status=1
@@ -140,7 +140,6 @@ def check_update_alarm_after_notified(cursor, alarm_id):
         """.format(alarm_id)
         cursor.execute(query_look_user)
         cnt = cursor.fetchone()[0]
-        print("C1: ", cnt)
         if cnt > 0:
             flag = 1
 
@@ -151,7 +150,6 @@ def check_update_alarm_after_notified(cursor, alarm_id):
         """.format(alarm_id)
         cursor.execute(query_look_helpl)
         cnt = cursor.fetchone()[0]
-        print("C2: ", cnt)
         if cnt > 0:
             flag = 1
 
