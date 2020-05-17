@@ -265,11 +265,12 @@ def register_helpline():
     ccode = request.args.get("ccode")
     phone = request.args.get("phone")
     specz = request.args.get("specz")
+    location = request.args.get("loc")
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
             usm.register_helpline(cursor, hid, passwd, hname, ccode, phone,
-                                  specz)
+                                  specz, location)
         connx.commit()
         stat = True
         connx.close()

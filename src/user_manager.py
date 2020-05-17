@@ -1,3 +1,6 @@
+import math
+
+
 def insert_guardians(cursor, user_id, guardian_list):
     guardian_query_str = [
         f"guardian_{i}" for i in range(1,
@@ -69,13 +72,30 @@ def register_user(cursor, uid, passw, fname, lname, age, ccode, phone, specz):
     cursor.execute(query)
 
 
-def register_helpline(cursor, hid, passw, hname, ccode, phone, specz):
+def register_helpline(cursor, hid, passw, hname, ccode, phone, specz, location):
+    latt, longt = [round(math.radians(float(x.strip())), 6) for x in location.split(",")]
+    loc_check_query = """
+    SELECT location_id FROM uchs_db.location_tbl ult
+    WHERE ult.latitude = {} AND ult.longitude = {}
+    """.format(latt, longt)
+    cursor.execute(loc_check_query)
+    results = cursor.fetchone()
+    if results:
+        loc_id = results[0]
+    else:
+        loc_ins_query = """
+        INSERT INTO uchs_db.location_tbl (latitude, longitude)
+        VALUES ({}, {});
+        """.format(latt, longt)
+        cursor.execute(loc_ins_query)
+        loc_id = cursor.lastrowid
     query = """
         INSERT INTO uchs_db.helpline_tbl
-        (helpline_id, helpline_name, helpline_phone_number_1, helpline_country_code, helpline_type, password)
-        VALUES('{}', '{}', {}, {}, '{}', AES_ENCRYPT('{}', UNHEX(SHA2('{}',512))));
-        """.format(hid, hname, phone, ccode, specz, passw, passw)
+        (helpline_id, helpline_name, helpline_phone_number_1, helpline_country_code, helpline_type, password, helpline_location_id)
+        VALUES('{}', '{}', {}, {}, '{}', AES_ENCRYPT('{}', UNHEX(SHA2('{}',512))), {});
+        """.format(hid, hname, phone, ccode, specz, passw, passw, loc_id)
     cursor.execute(query)
+
 
 
 def login_client(cursor, client_id, client_passw, utype="user"):
