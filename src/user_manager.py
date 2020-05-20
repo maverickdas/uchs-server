@@ -114,13 +114,12 @@ def login_client(cursor, client_id, client_passw, utype="user", is_alt=False):
         query = """
         select COUNT(AES_DECRYPT(ut.password , UNHEX(SHA2('{}',512))))
         from {}.user_tbl ut where ut.user_id ='{}';
-        """.format(db_name, client_passw, client_id)
+        """.format(client_passw, db_name, client_id)
     elif "help" in utype:
         query = """
         select COUNT(AES_DECRYPT(ht.password , UNHEX(SHA2('{}',512))))
         from {}.helpline_tbl ht where ht.helpline_id ='{}';
-        """.format(db_name, client_passw, client_id)
-    print(query)
+        """.format(client_passw, db_name, client_id)
     cursor.execute(query)
     cnt = cursor.fetchone()[0]
     if cnt:

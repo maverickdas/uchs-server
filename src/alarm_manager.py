@@ -28,8 +28,7 @@ def start_alert_procedure(cursor, alarm: Alarm, is_alt=False):
             guardian_list = [x for x in cursor.fetchone()[1:] if x is not None]
         except Exception:
             pass
-        print("Guardians are -")
-        print(guardian_list)
+        print("Guardians are - ", guardian_list)
 
         community_1_query = """
         select ut.user_id
@@ -46,8 +45,7 @@ def start_alert_procedure(cursor, alarm: Alarm, is_alt=False):
             community_list = [x[0] for x in cursor.fetchall()]
         except Exception:
             pass
-        print("Community is -")
-        print(community_list)
+        print("Community is - ", community_list)
 
         helpline_query = """
         select  ht.helpline_id from {}.helpline_tbl ht join {}.location_tbl lt 
@@ -63,8 +61,7 @@ def start_alert_procedure(cursor, alarm: Alarm, is_alt=False):
             helpline_list = [x[0] for x in cursor.fetchall()]
         except Exception:
             pass
-        print("Helplines are -")
-        print(helpline_list)
+        print("Helplines are - ", helpline_list)
 
         if not helpline_list:
             print(
@@ -87,8 +84,7 @@ def start_alert_procedure(cursor, alarm: Alarm, is_alt=False):
                 specialist_list = [x[0] for x in cursor.fetchall()]
             except Exception:
                 pass
-            print("Specialists are -")
-            print(specialist_list)
+            print("Specialists are - ", specialist_list)
 
         ## SEND ALERT
         # message = get_message(alarm)

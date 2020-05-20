@@ -143,7 +143,7 @@ def check_user_alert():
     alt_db = request.args.get("alt")
     is_alt = True if alt_db else False
     connx = get_db_connection(is_alt=is_alt)
-    response = {"data": [], "status": 0}
+    response = {"data": [], "alarmDetails": [], "status": 0}
     try:
         alarm_id_list = []
         cursor = connx.cursor()
@@ -187,7 +187,7 @@ def check_helpline_alert():
     alt_db = request.args.get("alt")
     is_alt = True if alt_db else False
     connx = get_db_connection(is_alt=is_alt)
-    response = {"data": [], "status": 0}
+    response = {"data": [], "alarmDetails": [], "status": 0}
     try:
         alarm_id_list = []
         cursor = connx.cursor()
