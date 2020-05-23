@@ -41,5 +41,5 @@ App code is in `/src`
     ```
 2. Run:
     ```
-    pytest -v
+    pytest -v tests
     ```
