@@ -1,12 +1,12 @@
 ## Register User
-- http://localhost:8080/registerUser?uid=Chakki&fname=P&lname=Akka&phone=69&ccode=99&age=21&specz=doctor&pass=123
+- http://localhost:8080/registerUser?uid=Chakki&fname=P&lname=Akka&phone=69&ccode=99&age=21&specz=Fire&pass=123
 - required unique fields `phone` and `uid`
 ## Register Helpline
-- http://localhost:8080/registerHelpline?hid=Chakki&hname=Akka&phone=69&ccode=99&age=21&specz=Fire&pass=123&loc=23.445,88.319
+- http://localhost:8080/registerHelpline?hid=Chakki&hname=Akka&phone=69&ccode=99&specz=Fire&pass=123&loc=23.445,88.319
 - required unique fields `phone` and `hid`
 ## Login
 - http://localhost:8080/login?type=user&id=Alyigne&pass=Vishal_narnolia
-- http://localhost:8080/login?type=help&id=Alyigne&pass=Vishal_narnolia
+- http://localhost:8080/login?type=help&id=ArSuu&pass=123
 ## Configure SOP - New
 - http://localhost:8080/configureSOP?uid=Attri&guid_list=Chatto,TM,GuruDev
 ## Configure SOP - Update

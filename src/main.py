@@ -66,10 +66,8 @@ def get_db_connection(testing=False, params=None, is_alt=False):
         # If deployed, use the local socket interface for accessing Cloud SQL
         unix_socket = '/cloudsql/{}'.format(db_connection_name)
         conn_db_name = testdb_name if is_alt else db_name
-        cnx = pymysql.connect(user=db_user,
-                              password=db_password,
-                              unix_socket=unix_socket,
-                              db=conn_db_name)
+        cnx = pymysql.connect(user=db_user, password=db_password,
+                              unix_socket=unix_socket, db=conn_db_name)
     else:
         # If running locally, use the TCP connections instead
         # Set up Cloud SQL Proxy (cloud.google.com/sql/docs/mysql/sql-proxy)
@@ -86,11 +84,8 @@ def get_db_connection(testing=False, params=None, is_alt=False):
         host = '127.0.0.1'
         port = 3306
         conn_db_name = testdb_name if is_alt else db_name
-        cnx = pymysql.connect(user=db_user,
-                              password=db_password,
-                              host=host,
-                              port=port,
-                              db=conn_db_name)
+        cnx = pymysql.connect(user=db_user, password=db_password,
+                              host=host, port=port, db=conn_db_name)
     return cnx
 
 
@@ -113,8 +108,7 @@ def raise_alarm():
         with connx.cursor() as cursor:
             user_check = usm.check_uid_exists(cursor, user_id, utype="user", is_alt=is_alt)
             assert user_check, f"UserID {user_id} has not been registered!"
-            stat1, alarm = alm.receive_alarm(cursor, user_id,
-                                             alarm_loc, alarm_type,
+            stat1, alarm = alm.receive_alarm(cursor, user_id, alarm_loc, alarm_type,
                                              is_alt=is_alt)
             stat2 = alm.start_alert_procedure(cursor, alarm, is_alt=is_alt)
         connx.commit()
@@ -220,8 +214,7 @@ def check_uid_exists():
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.check_uid_exists(cursor, client_id,
-                                       utype=utype, is_alt=is_alt)
+            val = usm.check_uid_exists(cursor, client_id, utype=utype, is_alt=is_alt)
         stat = True
         connx.close()
     except Exception as e:
@@ -306,8 +299,7 @@ def login():
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.login_client(cursor, uid, passwd,
-                                   utype=utype, is_alt=is_alt)
+            val = usm.login_client(cursor, uid, passwd, utype=utype, is_alt=is_alt)
         stat = True
         connx.close()
     except Exception as e:
@@ -333,11 +325,9 @@ def configure_sop():
         connx = get_db_connection()
         with connx.cursor() as cursor:
             if update:
-                stat = usm.update_guardians(cursor, uid,
-                                            guid_list, is_alt=is_alt)
+                stat = usm.update_guardians(cursor, uid, guid_list, is_alt=is_alt)
             else:
-                stat = usm.insert_guardians(cursor, uid,
-                                            guid_list, is_alt=is_alt)
+                stat = usm.insert_guardians(cursor, uid, guid_list, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
