@@ -111,6 +111,8 @@ def raise_alarm():
     try:
         connx = get_db_connection(is_alt=is_alt)
         with connx.cursor() as cursor:
+            user_check = usm.check_uid_exists(cursor, user_id, utype="user", is_alt=is_alt)
+            assert user_check, f"UserID {user_id} has not been registered!"
             stat1, alarm = alm.receive_alarm(cursor, user_id,
                                              alarm_loc, alarm_type,
                                              is_alt=is_alt)
@@ -147,28 +149,20 @@ def check_user_alert():
     try:
         alarm_id_list = []
         cursor = connx.cursor()
-        query = """
-        SELECT alarm_id FROM uchs_db.user_alert_status
-        WHERE user_id = '{}' AND status = 0; 
-        """.format(user_id)
-        cursor.execute(query)
-        results = cursor.fetchall()
-        if len(results) > 0:
-            response["alarmDetails"] = []
-            alarm_id_list = [x[0] for x in results]
-            for id in alarm_id_list:
-                resp_details = get_alert_response(cursor=cursor,
-                                                  alarm_id=id,
-                                                  is_alt=is_alt)
-                response["data"].append("Generic Message")
-                response["alarmDetails"].append(resp_details)
-                response["status"] = 1
-            alm.update_after_notified(cursor, user_id, alarm_id_list,
-                                      is_user=True, is_alt=is_alt)
-        connx.commit()
-        for aid in alarm_id_list:
-            alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
-        connx.commit()
+        if usm.check_pending(cursor, user_id, is_user=True, is_alt=is_alt):
+            alarm_id_list = usm.get_pending_alerts(cursor, user_id, is_user=True, is_alt=is_alt)
+            if len(alarm_id_list) > 0:
+                for aid in alarm_id_list:
+                    resp_details = get_alert_response(cursor=cursor, alarm_id=aid, is_alt=is_alt)
+                    response["data"].append("Generic Message")
+                    response["alarmDetails"].append(resp_details)
+                    response["status"] = 1
+                alm.update_after_notified(cursor, user_id, alarm_id_list,
+                                        is_user=True, is_alt=is_alt)
+            connx.commit()
+            for aid in alarm_id_list:
+                alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
+            connx.commit()
         stat = True
         connx.close()
     except Exception as e:
@@ -191,28 +185,20 @@ def check_helpline_alert():
     try:
         alarm_id_list = []
         cursor = connx.cursor()
-        query = """
-        SELECT alarm_id FROM uchs_db.helpline_alert_status
-        WHERE helpline_id = '{}' AND status = 0; 
-        """.format(helpl_id)
-        cursor.execute(query)
-        results = cursor.fetchall()
-        if len(results) > 0:
-            response["alarmDetails"] = []
-            alarm_id_list = [x[0] for x in results]
-            for id in alarm_id_list:
-                resp_details = get_alert_response(cursor=cursor,
-                                                  alarm_id=id,
-                                                  is_alt=is_alt)
-                response["data"].append("Generic Message")
-                response["alarmDetails"].append(resp_details)
-                response["status"] = 1
-            alm.update_after_notified(cursor, helpl_id, alarm_id_list,
-                                      is_user=False, is_alt=is_alt)
-        connx.commit()
-        for aid in alarm_id_list:
-            alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
-        connx.commit()
+        if usm.check_pending(cursor, helpl_id, is_user=False, is_alt=is_alt):
+            alarm_id_list = usm.get_pending_alerts(cursor, helpl_id, is_user=False, is_alt=is_alt)
+            if len(alarm_id_list) > 0:
+                for aid in alarm_id_list:
+                    resp_details = get_alert_response(cursor=cursor, alarm_id=aid, is_alt=is_alt)
+                    response["data"].append("Generic Message")
+                    response["alarmDetails"].append(resp_details)
+                    response["status"] = 1
+                alm.update_after_notified(cursor, helpl_id, alarm_id_list,
+                                        is_user=False, is_alt=is_alt)
+            connx.commit()
+            for aid in alarm_id_list:
+                alm.check_update_alarm_after_notified(cursor, aid, is_alt=is_alt)
+            connx.commit()
         stat = True
         connx.close()
     except Exception as e:

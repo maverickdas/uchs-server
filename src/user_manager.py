@@ -66,6 +66,46 @@ def check_uid_exists(cursor, client_id, utype="user", is_alt=False):
     return True
 
 
+def check_pending(cursor, client_id, is_user=True, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    if is_user:
+        check_query = """
+        SELECT pending FROM {}.user_tbl
+        WHERE user_id = '{}'
+        """.format(db_name, client_id)
+    else:
+        check_query = """
+        SELECT pending FROM {}.helpline_tbl
+        WHERE helpline_id = '{}'
+        """.format(db_name, client_id)
+    cursor.execute(check_query)
+    pending = cursor.fetchone()[0]
+    print(f"\t{pending} notifications for {client_id}")
+    if pending > 0:
+        return True
+    return False
+
+
+def get_pending_alerts(cursor, client_id, is_user=True, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    if is_user:
+        query = """
+        SELECT alarm_id FROM {}.user_alert_status
+        WHERE user_id = '{}' AND status = 0; 
+        """.format(db_name, client_id)
+    else:
+        query = """
+        SELECT alarm_id FROM {}.helpline_alert_status
+        WHERE helpline_id = '{}' AND status = 0; 
+        """.format(db_name, client_id)
+    cursor.execute(query)
+    results = cursor.fetchall()
+    try:
+        return [x[0] for x in results]
+    except Exception:
+        return []
+
+
 def register_user(cursor, uid, passw, fname, lname, age,
                   ccode, phone, specz, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"

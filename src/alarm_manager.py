@@ -103,11 +103,7 @@ def send_alerts_to_clients(cursor, alert: Alert, is_alt=False):
     return True
 
 
-def update_after_notified(cursor,
-                          client_id,
-                          alarm_id_list,
-                          is_user=True,
-                          is_alt=False):
+def update_after_notified(cursor, client_id, alarm_id_list, is_user=True, is_alt=False):
     ## client_id is same as user/helpline id
     query_upd = ""
     alert_row_vals = "(" + ",".join([f"'{aid}'"
@@ -121,6 +117,11 @@ def update_after_notified(cursor,
             WHERE alarm_id in {} AND user_id='{}';
             """.format(db_name, alert_row_vals, client_id)
             cursor.execute(query_upd)
+            reset_query = """
+            UPDATE {}.user_tbl SET pending=0
+            WHERE user_id = '{}'
+            """.format(db_name, client_id)
+            cursor.execute(reset_query)
         else:
             query_upd = """
             UPDATE {}.helpline_alert_status
@@ -128,6 +129,11 @@ def update_after_notified(cursor,
             WHERE alarm_id in {} AND helpline_id='{}';
             """.format(db_name, alert_row_vals, client_id)
             cursor.execute(query_upd)
+            reset_query = """
+            UPDATE {}.helpline_tbl SET pending=0
+            WHERE helpline_id = '{}'
+            """.format(db_name, client_id)
+            cursor.execute(reset_query)
     except Exception:
         raise
 
