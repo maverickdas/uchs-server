@@ -8,7 +8,6 @@ from flask import Flask, jsonify, request
 
 import alarm_manager as alm
 import user_manager as usm
-from getloc import get_loc
 from message_gen import get_alert_response
 from uchs_exceptions import DBError
 
