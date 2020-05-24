@@ -25,3 +25,7 @@ To access remote endpoint, replace `localhost:8080` with `https://tribal-marker-
 - http://localhost:8080/clientExists?type=user&id=Thakuma for user
 ## Update user live location
 - http://localhost:8080/liveLocation?uid=Chatto&loc=23.25,81.9
+## Get all alarms
+- http://localhost:8080/getAllAlarms
+## Monitor a alert
+- http://localhost:8080/monitorAlert?aid=ff05c116-9d99-11ea-b9f8-98fa9b07fff2

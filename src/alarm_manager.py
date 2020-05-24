@@ -173,3 +173,33 @@ def check_update_alarm_after_notified(cursor, alarm_id, is_alt=False):
             cursor.execute(query_upd_alarm)
     except Exception:
         raise
+
+
+def monitor_alerts(cursor, alarm_id, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    user_query = """
+    SELECT user_id, timestamp FROM {}.user_alert_status
+    WHERE alarm_id = '{}' AND status = 1;
+    """.format(db_name, alarm_id)
+    helpl_query = """
+    SELECT helpline_id, timestamp FROM {}.helpline_alert_status
+    WHERE alarm_id = '{}' AND status = 1;
+    """.format(db_name, alarm_id)
+    cursor.execute(user_query)
+    users = cursor.fetchall()
+    users = [(x, t.timestamp()) for (x,t) in users]
+    cursor.execute(helpl_query)
+    helplines = cursor.fetchall()
+    helplines = [(x, t.timestamp()) for (x,t) in helplines]
+    return users, helplines
+
+
+def get_alarm_list(cursor, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    user_query = """
+    SELECT alarm_id, user_id, alarm_status, alarm_type, timestamp
+    FROM {}.alarm_status;
+    """.format(db_name)
+    cursor.execute(user_query)
+    alarms = cursor.fetchall()
+    return alarms

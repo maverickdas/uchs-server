@@ -94,6 +94,32 @@ def test():
     return jsonify(response)
 
 
+@app.route('/getAllAlarms', methods=['GET'])
+def see_alarms():
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            alarms = alm.get_alarm_list(cursor, is_alt=is_alt)
+        stat = True
+        connx.close()
+    except Exception as e:
+        stat = False
+        err_response = formatted_err_response(e)
+    response = {"status": 0}
+    if stat:
+        response = {"alarms": [], "status": 1}
+        print(alarms)
+        for aid, uid, astatus, atype, _ in alarms:
+            response["alarms"].append({
+                "alarm_id": aid, "user_id": uid, "status": astatus, "type": atype
+            })
+    else:
+        response.update(err_response)
+    return jsonify(response)
+
+
 @app.route('/raiseAlarm', methods=['GET'])
 def raise_alarm():
     user_id = request.args.get('userID')
@@ -120,8 +146,8 @@ def raise_alarm():
     if stat1 and stat2:
         response = {
             "data": {
-                "ACK":
-                f"Received {alarm_type} alarm from {user_id} from {alarm_loc}."
+                "ACK": f"Received {alarm_type} alarm from {user_id} from {alarm_loc}.",
+                "ID": alarm.id
             },
             "status": 1
         }
@@ -360,6 +386,37 @@ def update_live_location():
     response = {"status": 0}
     if stat:
         response = {"status": 1}
+    else:
+        response.update(err_response)
+    return jsonify(response)
+
+
+@app.route('/monitorAlert', methods=['GET'])
+def monitor_alert():
+    aid = request.args.get("aid")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    users = []
+    helplines = []
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            users, helplines = alm.monitor_alerts(cursor, aid, is_alt)
+        stat = True
+        connx.close()
+    except Exception as e:
+        stat = False
+        err_response = formatted_err_response(e)
+    response = {"status": 0}
+    if stat:
+        response = {"users": {}, "helplines": {}, 
+                    "#users": 0, "#helplines":0, "status": 1}
+        if users:
+            response["users"] = {k: v for (k,v) in users}
+            response["#users"] = len(users)
+        if helplines:
+            response["helplines"] = {k: v for (k,v) in helplines}
+            response["#helplines"] = len(helplines)
     else:
         response.update(err_response)
     return jsonify(response)
