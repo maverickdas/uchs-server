@@ -6,6 +6,7 @@ import pymysql
 import yaml
 from flask import Flask, jsonify, request
 
+import utils
 import alarm_manager as alm
 import user_manager as usm
 from message_gen import get_alert_response
@@ -396,9 +397,9 @@ def monitor_alert():
     aid = request.args.get("aid")
     alt_db = request.args.get("alt")
     is_alt = True if alt_db else False
-    users = []
-    helplines = []
+    users, helplines = [], []
     try:
+        assert utils.is_valid_uuid(aid, version_num=1), f"'{aid}' is not a valid UUID1"
         connx = get_db_connection()
         with connx.cursor() as cursor:
             users, helplines = alm.monitor_alerts(cursor, aid, is_alt)
