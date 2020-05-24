@@ -1,3 +1,5 @@
+## Remote endpoint
+To access remote endpoint, replace `localhost:8080` with `https://tribal-marker-274610.el.r.appspot.com`
 ## Register User
 - http://localhost:8080/registerUser?uid=Chakki&fname=P&lname=Akka&phone=69&ccode=99&age=21&specz=Fire&pass=123
 - required unique fields `phone` and `uid`
@@ -21,3 +23,5 @@
 ## Check User/Helpline ID exists
 - http://localhost:8080/clientExists?type=help&id=Arsuu for helpline
 - http://localhost:8080/clientExists?type=user&id=Thakuma for user
+## Update user live location
+- http://localhost:8080/liveLocation?uid=Chatto&loc=23.25,81.9
