@@ -341,6 +341,30 @@ def configure_sop():
     return jsonify(response)
 
 
+@app.route('/liveLocation', methods=['GET'])
+def update_live_location():
+    user_id = request.args.get("uid")
+    location = request.args.get("loc")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            usm.update_live_location(cursor, user_id, location, is_alt=is_alt)
+        connx.commit()
+        stat = True
+        connx.close()
+    except Exception as e:
+        stat = False
+        err_response = formatted_err_response(e)
+    response = {"status": 0}
+    if stat:
+        response = {"status": 1}
+    else:
+        response.update(err_response)
+    return jsonify(response)
+
+
 if __name__ == '__main__':
     load_env_conf()
     app.run(host='127.0.0.1', port=8080, debug=True)

@@ -166,3 +166,15 @@ def login_client(cursor, client_id, client_passw, utype="user", is_alt=False):
         return True
     return False
 
+
+def update_live_location(cursor, user_id, location, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    latt, longt = [
+        math.radians(float(x.strip())) for x in location.split(",")
+    ]
+    query = """
+    UPDATE {}.user_live_location
+    SET latitude={}, longitude={}, `timestamp`=CURRENT_TIMESTAMP
+    WHERE user_id='{}';
+    """.format(db_name, latt, longt, user_id)
+    cursor.execute(query)
