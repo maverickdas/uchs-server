@@ -116,6 +116,13 @@ def register_user(cursor, uid, passw, fname, lname, age,
         """.format(db_name, uid, fname, lname, age, phone, ccode, specz, passw,
                    passw)
     cursor.execute(query)
+    # 0,0 as live location for new-users
+    live_loc_query = """
+    INSERT INTO {}.user_live_location
+    (user_id, latitude, longitude)
+    VALUES ('{}', {}, {})
+    """.format(db_name, uid, 0, 0)
+    cursor.execute(live_loc_query)
 
 
 def register_helpline(cursor, hid, passw, hname, ccode,
