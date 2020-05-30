@@ -3,6 +3,19 @@ import math
 from utils import byte_to_int
 
 
+def get_guardians(cursor, user_id, is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    guardian_query = """
+    SELECT * FROM {}.user_emergency_contacts_registered
+    WHERE user_id = '{}';
+    """.format(db_name, user_id)
+    cursor.execute(guardian_query)
+    results = cursor.fetchone()
+    assert results, f"User '{user_id}' entry does not exist in guardians table!"
+    guardian_list = [x for x in results[1:] if x is not None]
+    return True, guardian_list
+
+
 def insert_guardians(cursor, user_id, guardian_list, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
     guardian_query_str = [
@@ -125,6 +138,11 @@ def register_user(cursor, uid, passw, fname, lname, age,
     VALUES ('{}', {}, {})
     """.format(db_name, uid, 0, 0)
     cursor.execute(live_loc_query)
+    # null guardians for new-users
+    guardian_query = """
+    INSERT INTO {}.user_emergency_contacts_registered (user_id) VALUES ('{}')
+    """.format(db_name, uid)
+    cursor.execute(guardian_query)
 
 
 def register_helpline(cursor, hid, passw, hname, ccode,

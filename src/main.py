@@ -24,7 +24,8 @@ def formatted_err_response(exc: Exception):
     sys_err = sys.exc_info()[0]
     tb_err = traceback.format_exc()
     return {
-        "errorMsg": str(err) + " => " + str(sys_err),
+        "errorMsg": str(err).strip(),
+        "errorType": str(sys_err),
         "errorDetails": str(tb_err).splitlines(),
         "status": 0
     }
@@ -443,6 +444,30 @@ def monitor_alert():
         if helplines:
             response["helplines"] = {k: v for (k,v) in helplines}
             response["#helplines"] = len(helplines)
+    else:
+        response.update(err_response)
+    return jsonify(response)
+
+
+@app.route('/getGuardians', methods=['GET'])
+def get_guardians():
+    uid = request.args.get("uid")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    guardians = []
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            stat, guardians = usm.get_guardians(cursor, uid, is_alt=is_alt)
+        connx.close()
+    except Exception as e:
+        stat = False
+        err_response = formatted_err_response(e)
+    response = {"status": 0}
+    if stat:
+        response = {"guardians": {}, "#guardians":0, "status": 1}
+        response["guardians"] = guardians
+        response["#guardians"] = len(guardians)
     else:
         response.update(err_response)
     return jsonify(response)
