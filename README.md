@@ -1,5 +1,9 @@
 # UCHS
-This is the repository for our Final Year Design Lab project - Universal Community Helpline Service
+This is the server-side code for our Final Year Design Lab project - Universal Community Helpline Service.
+
+We are using MySQL (via [Cloud SQL](https://cloud.google.com/sql/docs/mysql)) for all our database needs on the server end.
+
+Our client side Android application code is at https://github.com/Scjatto/UCHSClient.
 
 # Server side code
 
