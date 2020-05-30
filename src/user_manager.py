@@ -204,7 +204,10 @@ def login_client(cursor, client_id, client_passw, utype="user", is_alt=False):
         WHERE helpline_id = '{}'
         """.format(db_name, client_id)
     cursor.execute(login_check_query)
-    is_loggedin = byte_to_int(cursor.fetchone()[0])
+    result = cursor.fetchone()
+    if not result:
+        return False, f"'{client_id}' is unregistered!"
+    is_loggedin = byte_to_int(result[0])
     if is_loggedin:
         return False, f"'{client_id}' has already logged in!"
     cursor.execute(pass_check_query)
@@ -236,7 +239,10 @@ def logout_client(cursor, client_id, utype="user", is_alt=False):
         WHERE helpline_id = '{}'
         """.format(db_name, client_id)
     cursor.execute(login_check_query)
-    is_loggedin = byte_to_int(cursor.fetchone()[0])
+    result = cursor.fetchone()
+    if not result:
+        return False, f"'{client_id}' is unregistered!"
+    is_loggedin = byte_to_int(result[0])
     if not is_loggedin:
         print(f"--ALERT: {utype} STACKED LOGOUT by '{client_id}'--")
         return False, f"Stacked logouts from '{client_id}'!"
