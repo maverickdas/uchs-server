@@ -11,3 +11,7 @@ def is_valid_uuid(string, version_num=1):
     except ValueError:
         return False
     return val.hex == string
+
+
+def byte_to_int(byte_var):
+    return int.from_bytes(byte_var, byteorder="big")

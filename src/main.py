@@ -325,7 +325,8 @@ def login():
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.login_client(cursor, uid, passwd, utype=utype, is_alt=is_alt)
+            val, info = usm.login_client(cursor, uid, passwd, utype=utype, is_alt=is_alt)
+        connx.commit()
         stat = True
         connx.close()
     except Exception as e:
@@ -333,7 +334,31 @@ def login():
         err_response = formatted_err_response(e)
     response = {"status": 0}
     if stat:
-        response = {"check": 1 if val else 0, "status": 1}
+        response = {"check": 1 if val else 0, "status": 1, "desc": info}
+    else:
+        response.update(err_response)
+    return jsonify(response)
+
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    utype = request.args.get("type").lower()
+    uid = request.args.get("id")
+    alt_db = request.args.get("alt")
+    is_alt = True if alt_db else False
+    try:
+        connx = get_db_connection()
+        with connx.cursor() as cursor:
+            val, info = usm.logout_client(cursor, uid, utype=utype, is_alt=is_alt)
+        connx.commit()
+        stat = True
+        connx.close()
+    except Exception as e:
+        stat = False
+        err_response = formatted_err_response(e)
+    response = {"status": 0}
+    if stat:
+        response = {"check": 1 if val else 0, "status": 1, "desc": info}
     else:
         response.update(err_response)
     return jsonify(response)

@@ -1,5 +1,7 @@
 import math
 
+from utils import byte_to_int
+
 
 def insert_guardians(cursor, user_id, guardian_list, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
@@ -158,20 +160,70 @@ def register_helpline(cursor, hid, passw, hname, ccode,
 def login_client(cursor, client_id, client_passw, utype="user", is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
     if "user" in utype:
-        query = """
+        login_check_query = """
+        SELECT login_status FROM {}.user_tbl ut
+        WHERE ut.user_id = '{}'
+        """.format(db_name, client_id)
+        pass_check_query = """
         select COUNT(AES_DECRYPT(ut.password , UNHEX(SHA2('{}',512))))
         from {}.user_tbl ut where ut.user_id ='{}';
         """.format(client_passw, db_name, client_id)
+        login_status_update = """
+        UPDATE {}.user_tbl SET login_status = 1
+        WHERE user_id = '{}'
+        """.format(db_name, client_id)
     elif "help" in utype:
-        query = """
+        login_check_query = """
+        SELECT login_status FROM {}.helpline_tbl ut
+        WHERE ut.helpline_id = '{}'
+        """.format(db_name, client_id)
+        pass_check_query = """
         select COUNT(AES_DECRYPT(ht.password , UNHEX(SHA2('{}',512))))
         from {}.helpline_tbl ht where ht.helpline_id ='{}';
         """.format(client_passw, db_name, client_id)
-    cursor.execute(query)
+        login_status_update = """
+        UPDATE {}.helpline_tbl SET login_status = 1
+        WHERE helpline_id = '{}'
+        """.format(db_name, client_id)
+    cursor.execute(login_check_query)
+    is_loggedin = byte_to_int(cursor.fetchone()[0])
+    if is_loggedin:
+        return False, f"'{client_id}' has already logged in!"
+    cursor.execute(pass_check_query)
     cnt = cursor.fetchone()[0]
-    if cnt:
-        return True
-    return False
+    if not cnt:
+        return False, f"'{client_id}' password is incorrect!"
+    cursor.execute(login_status_update)
+    return True, f"Login successful!"
+
+
+def logout_client(cursor, client_id, utype="user", is_alt=False):
+    db_name = "uchs_test" if is_alt else "uchs_db"
+    if "user" in utype:
+        login_check_query = """
+        SELECT login_status FROM {}.user_tbl ut
+        WHERE ut.user_id = '{}'
+        """.format(db_name, client_id)
+        login_status_update = """
+        UPDATE {}.user_tbl SET login_status = 0
+        WHERE user_id = '{}'
+        """.format(db_name, client_id)
+    elif "help" in utype:
+        login_check_query = """
+        SELECT login_status FROM {}.helpline_tbl ut
+        WHERE ut.helpline_id = '{}'
+        """.format(db_name, client_id)
+        login_status_update = """
+        UPDATE {}.helpline_tbl SET login_status = 0
+        WHERE helpline_id = '{}'
+        """.format(db_name, client_id)
+    cursor.execute(login_check_query)
+    is_loggedin = byte_to_int(cursor.fetchone()[0])
+    if not is_loggedin:
+        print(f"--ALERT: {utype} STACKED LOGOUT by '{client_id}'--")
+        return False, f"Stacked logouts from '{client_id}'!"
+    cursor.execute(login_status_update)
+    return True, "Logout successful!"
 
 
 def update_live_location(cursor, user_id, location, is_alt=False):
