@@ -16,6 +16,7 @@ def get_guardians(cursor, user_id, is_alt=False):
     return True, guardian_list
 
 
+# Unused for configure SOP - Initial insert happens at Registration
 def insert_guardians(cursor, user_id, guardian_list, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
     guardian_query_str = [
@@ -38,17 +39,13 @@ def insert_guardians(cursor, user_id, guardian_list, is_alt=False):
 
 def update_guardians(cursor, user_id, guardian_list, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
-    select_query = """
-    SELECT * FROM {}.user_emergency_contacts_registered
-    WHERE user_id = '{}';
-    """.format(db_name, user_id)
-    cursor.execute(select_query)
-    num_guardians = len([x for x in cursor.fetchone() if x]) - 1
-    num_updates = len(guardian_list)
-    for i in range(num_guardians - num_updates):
-        guardian_list.append('Default')
+    if user_id in guardian_list:
+        return False, f"'{user_id}' is not a valid Guardian for '{user_id}'"
+    num_guardians = len(guardian_list)
     guardian_query_str = [
         f"guardian_{i+1} = '{g}'" for i, g in enumerate(guardian_list)
+    ] + [
+        f"guardian_{j} = NULL" for j in range(num_guardians+1, 16)
     ]
     guardian_query_str = ",".join(guardian_query_str)
     query = """
@@ -57,7 +54,7 @@ def update_guardians(cursor, user_id, guardian_list, is_alt=False):
     """.format(db_name, guardian_query_str, user_id)
     try:
         cursor.execute(query)
-        return True
+        return True, f"Updated SOP for user '{user_id}'"
     except Exception:
         raise
 

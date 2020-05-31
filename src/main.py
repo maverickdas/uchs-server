@@ -377,9 +377,9 @@ def configure_sop():
         connx = get_db_connection()
         with connx.cursor() as cursor:
             if update:
-                stat = usm.update_guardians(cursor, uid, guid_list, is_alt=is_alt)
+                val, info = usm.update_guardians(cursor, uid, guid_list, is_alt=is_alt)
             else:
-                stat = usm.insert_guardians(cursor, uid, guid_list, is_alt=is_alt)
+                val = usm.insert_guardians(cursor, uid, guid_list, is_alt=is_alt)
         connx.commit()
         stat = True
         connx.close()
@@ -388,7 +388,7 @@ def configure_sop():
         err_response = formatted_err_response(e)
     response = {"status": 0}
     if stat:
-        response["status"] = 1
+        response = {"check": 1 if val else 0, "status": 1, "desc": info}
     else:
         response.update(err_response)
     return jsonify(response)
