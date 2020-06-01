@@ -235,13 +235,14 @@ def check_helpline_alert():
 @app.route('/clientExists', methods=['GET'])
 def check_uid_exists():
     utype = request.args.get("type").lower()
-    client_id = request.args.get("id")
+    client_ids = request.args.get("IDlist")
     alt_db = request.args.get("alt")
     is_alt = True if alt_db else False
+    client_list = client_ids.split(",")
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
-            val = usm.check_uid_exists(cursor, client_id, utype=utype, is_alt=is_alt)
+            valid_ids, invalid_ids = usm.check_uid_list_exists(cursor, client_list, utype=utype, is_alt=is_alt)
         stat = True
         connx.close()
     except Exception as e:
@@ -249,7 +250,9 @@ def check_uid_exists():
         err_response = formatted_err_response(e)
     response = {"status": 0}
     if stat:
-        response = {"check": 1 if val else 0, "status": 1}
+        val = len(invalid_ids)
+        response = {"check": 1 if not val else 0, 
+        "invalid_IDs": invalid_ids, "valid_IDs": valid_ids, "status": 1}
     else:
         response.update(err_response)
     return jsonify(response)

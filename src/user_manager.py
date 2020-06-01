@@ -78,6 +78,17 @@ def check_uid_exists(cursor, client_id, utype="user", is_alt=False):
     return True
 
 
+def check_uid_list_exists(cursor, client_list, utype="user", is_alt=False):
+    failed_ids, success_ids = [], []
+    for client in client_list:
+        flag = check_uid_exists(cursor, client, utype="user", is_alt=is_alt)
+        if flag:
+            success_ids.append(client)
+        else:
+            failed_ids.append(client)
+    return success_ids, failed_ids
+
+
 def check_pending(cursor, client_id, is_user=True, is_alt=False):
     db_name = "uchs_test" if is_alt else "uchs_db"
     if is_user:
