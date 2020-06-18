@@ -1,3 +1,14 @@
+'''
+File: alert.py
+Project: UCHS
+File Created: Saturday, 9th May 2020 10:43:30 am
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:27:17 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 import enum
 import uchs_exceptions as exs
 

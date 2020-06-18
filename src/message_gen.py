@@ -1,3 +1,14 @@
+'''
+File: message_gen.py
+Project: UCHS
+File Created: Saturday, 9th May 2020 11:04:27 am
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:26:55 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 import uchs_exceptions as exs
 from alarm import Alarm, AlarmType
 

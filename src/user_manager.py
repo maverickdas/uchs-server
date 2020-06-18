@@ -1,3 +1,14 @@
+'''
+File: user_manager.py
+Project: UCHS
+File Created: Wednesday, 20th May 2020 5:33:39 pm
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:26:26 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 import math
 
 from utils import byte_to_int

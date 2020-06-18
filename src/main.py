@@ -1,3 +1,14 @@
+'''
+File: main.py
+Project: UCHS
+File Created: Sunday, 19th April 2020 11:57:44 am
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:23:30 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 import os
 import sys
 import traceback

@@ -1,3 +1,14 @@
+'''
+File: test_init.py
+Project: UCHS
+File Created: Thursday, 7th May 2020 10:01:41 pm
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:28:29 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 import os
 import sys
 sys.path.append(os.path.join(__file__, "..", ".."))

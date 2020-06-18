@@ -1,3 +1,14 @@
+'''
+File: utils.py
+Project: UCHS
+File Created: Sunday, 31st May 2020 5:05:30 pm
+Author: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+Last Modified: Thursday, 18th June 2020 10:27:48 am
+Modified By: Abhirup Das (abhidash@outlook.com, https://github.com/maverickdas)
+-----
+An Effort By: Team A.V.A.A.S., 2020
+'''
 from uuid import UUID
 import uchs_exceptions as exs
 
