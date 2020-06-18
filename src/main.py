@@ -4,7 +4,9 @@ import traceback
 
 import pymysql
 import yaml
-from flask import Flask, jsonify, request
+# from flask import Flask, jsonify, request
+from fastapi import FastAPI
+# from fastapi.encoders import jsonable_encoder
 
 import utils
 import alarm_manager as alm
@@ -56,7 +58,7 @@ def load_env_conf(testing=False):
 
 
 load_env_conf()
-app = Flask(__name__)
+app = FastAPI()
 
 
 def get_db_connection(testing=False, params=None, is_alt=False):
@@ -90,16 +92,15 @@ def get_db_connection(testing=False, params=None, is_alt=False):
     return cnx
 
 
-@app.route('/')
-def test():
+@app.get('/')
+async def test():
     response = {"data": "Welcome to UCHS-Server!", "status": "OK"}
-    return jsonify(response)
+    return response
 
 
-@app.route('/getAllAlarms', methods=['GET'])
-def see_alarms():
-    alt_db = request.args.get("alt")
-    is_alt = True if alt_db else False
+@app.get('/getAllAlarms')
+async def see_alarms(alt: bool = False):
+    is_alt = alt
     try:
         connx = get_db_connection()
         with connx.cursor() as cursor:
@@ -112,14 +113,13 @@ def see_alarms():
     response = {"status": 0}
     if stat:
         response = {"alarms": [], "status": 1}
-        print(alarms)
         for aid, uid, astatus, atype, _ in alarms:
             response["alarms"].append({
                 "alarm_id": aid, "user_id": uid, "status": astatus, "type": atype
             })
     else:
         response.update(err_response)
-    return jsonify(response)
+    return response
 
 
 @app.route('/raiseAlarm', methods=['GET'])
@@ -160,25 +160,23 @@ def raise_alarm():
     return jsonify(response)
 
 
-@app.route('/checkUserAlerts', methods=['GET'])
-def check_user_alert():
-    user_id = request.args.get("uid")
-    alt_db = request.args.get("alt")
-    is_alt = True if alt_db else False
+@app.get('/checkUserAlerts')
+def check_user_alert(uid, alt: bool = False):
+    is_alt = alt
     connx = get_db_connection(is_alt=is_alt)
     response = {"data": [], "alarmDetails": [], "status": 0}
     try:
         alarm_id_list = []
         cursor = connx.cursor()
-        if usm.check_pending(cursor, user_id, is_user=True, is_alt=is_alt):
-            alarm_id_list = usm.get_pending_alerts(cursor, user_id, is_user=True, is_alt=is_alt)
+        if usm.check_pending(cursor, uid, is_user=True, is_alt=is_alt):
+            alarm_id_list = usm.get_pending_alerts(cursor, uid, is_user=True, is_alt=is_alt)
             if len(alarm_id_list) > 0:
                 for aid in alarm_id_list:
                     resp_details = get_alert_response(cursor=cursor, alarm_id=aid, is_alt=is_alt)
                     response["data"].append("Generic Message")
                     response["alarmDetails"].append(resp_details)
                     response["status"] = 1
-                alm.update_after_notified(cursor, user_id, alarm_id_list,
+                alm.update_after_notified(cursor, uid, alarm_id_list,
                                         is_user=True, is_alt=is_alt)
             connx.commit()
             for aid in alarm_id_list:
@@ -193,28 +191,26 @@ def check_user_alert():
         response["status"] = 1
     else:
         response.update(err_response)
-    return jsonify(response)
+    return response
 
 
-@app.route('/checkHelplineAlerts', methods=['GET'])
-def check_helpline_alert():
-    helpl_id = request.args.get("hid")
-    alt_db = request.args.get("alt")
-    is_alt = True if alt_db else False
+@app.get('/checkHelplineAlerts')
+def check_helpline_alert(hid, alt: bool = False):
+    is_alt = alt
     connx = get_db_connection(is_alt=is_alt)
     response = {"data": [], "alarmDetails": [], "status": 0}
     try:
         alarm_id_list = []
         cursor = connx.cursor()
-        if usm.check_pending(cursor, helpl_id, is_user=False, is_alt=is_alt):
-            alarm_id_list = usm.get_pending_alerts(cursor, helpl_id, is_user=False, is_alt=is_alt)
+        if usm.check_pending(cursor, hid, is_user=False, is_alt=is_alt):
+            alarm_id_list = usm.get_pending_alerts(cursor, hid, is_user=False, is_alt=is_alt)
             if len(alarm_id_list) > 0:
                 for aid in alarm_id_list:
                     resp_details = get_alert_response(cursor=cursor, alarm_id=aid, is_alt=is_alt)
                     response["data"].append("Generic Message")
                     response["alarmDetails"].append(resp_details)
                     response["status"] = 1
-                alm.update_after_notified(cursor, helpl_id, alarm_id_list,
+                alm.update_after_notified(cursor, hid, alarm_id_list,
                                         is_user=False, is_alt=is_alt)
             connx.commit()
             for aid in alarm_id_list:
@@ -229,7 +225,7 @@ def check_helpline_alert():
         response["status"] = 1
     else:
         response.update(err_response)
-    return jsonify(response)
+    return response
 
 
 @app.route('/clientExists', methods=['GET'])
@@ -452,11 +448,9 @@ def monitor_alert():
     return jsonify(response)
 
 
-@app.route('/getGuardians', methods=['GET'])
-def get_guardians():
-    uid = request.args.get("uid")
-    alt_db = request.args.get("alt")
-    is_alt = True if alt_db else False
+@app.get('/getGuardians')
+async def get_guardians(uid, alt: bool = True):
+    is_alt = alt
     guardians = []
     try:
         connx = get_db_connection()
@@ -473,7 +467,7 @@ def get_guardians():
         response["#guardians"] = len(guardians)
     else:
         response.update(err_response)
-    return jsonify(response)
+    return response
 
 
 if __name__ == '__main__':
